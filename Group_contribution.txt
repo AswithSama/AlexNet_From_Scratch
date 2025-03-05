@@ -1,0 +1,13 @@
+Group contribution details of our project are given below:
+
+Background: The background research and foundational information was completed collectively by Divya and Aswith.
+Model Architecture: The architecture of the model was developed by Santhosh and Aswith, with work divided based on different layers in AlexNet.
+Model Training: Model training was handled by Santhosh, Aswith, and Divya, with responsibilities segmented by different layers of AlexNet.
+Minimal CPU-ready Working Example (MWE-CPU): The development of CPU-ready minimal working example was collective effort by Santhosh, Aswith, and Divya.
+Discussion: The discussion section was jointly done by Divya and Santhosh, about project findings and conclusions.
+
+Group Members:
+
+Santhosh Kavi  - skavi@hawk.iit.edu
+Aswith Sama   - asama@hawk.iit.edu
+Divya Chintala - dchintala@hawk.iit.edu
