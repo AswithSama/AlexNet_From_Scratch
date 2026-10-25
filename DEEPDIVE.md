@@ -84,11 +84,11 @@ No PyTorch training implementation is present in the inspected archive. TensorFl
 
 For a color image, the input is a three-dimensional array:
 
-\[
+$$
 X\in \mathbb{R}^{H\times W\times C}
-\]
+$$
 
-Here, \(H\) and \(W\) are the image height and width, and \(C=3\) corresponds to RGB channels. A CNN does not directly recognize a "bird" in these arrays. Instead, it computes progressively transformed arrays called **feature maps**.
+Here, $H$ and $W$ are the image height and width, and $C=3$ corresponds to RGB channels. A CNN does not directly recognize a "bird" in these arrays. Instead, it computes progressively transformed arrays called **feature maps**.
 
 The first-principles notebooks show how those maps can be constructed from the same basic mathematical primitives used throughout linear algebra: multiplication, addition, maxima, and elementwise functions.
 
@@ -96,38 +96,38 @@ The first-principles notebooks show how those maps can be constructed from the s
 
 **Intuition.** Imagine looking through a small window that moves across the image. At every position, a filter multiplies the visible pixels by its own weights, adds them, and produces one number. Repeating the operation creates a map of where the filter responds strongly.
 
-A single filter for an RGB image has weights over both its spatial neighborhood and all input channels. With \(F\) filters, the result has \(F\) output channels:
+A single filter for an RGB image has weights over both its spatial neighborhood and all input channels. With $F$ filters, the result has $F$ output channels:
 
-\[
+$$
 W\in\mathbb{R}^{F\times K_h\times K_w\times C_{in}},\qquad
 Y\in\mathbb{R}^{H_{out}\times W_{out}\times F}.
-\]
+$$
 
 For the cross-correlation operation computed by the notebook's `Conv2D.forward` (commonly called convolution in deep-learning APIs):
 
-\[
+$$
 Y[i,j,f]
 =\sum_{u=0}^{K_h-1}\sum_{v=0}^{K_w-1}\sum_{c=0}^{C_{in}-1}
 X[is+u,js+v,c]W[f,u,v,c].
-\]
+$$
 
 The notebook does not reverse the kernel, so mathematically the inner operation is **cross-correlation**. This is standard terminology in CNN implementations even though the layer is named convolution.
 
 ![Numerical sliding-window illustration of the custom convolution idea](docs/assets/convolution_intuition.png)
 
-**Output size.** For padding \(P\), kernel width \(K\), and stride \(S\), the usual formula along one spatial dimension is:
+**Output size.** For padding $P$, kernel width $K$, and stride $S$, the usual formula along one spatial dimension is:
 
-\[
+$$
 O=\left\lfloor\frac{I+2P-K}{S}\right\rfloor+1.
-\]
+$$
 
 For the notebook's first standalone example:
 
-\[
+$$
 I=227,\quad K=11,\quad S=4,\quad P=0
 \quad\Rightarrow\quad
 O=\left\lfloor\frac{227-11}{4}\right\rfloor+1=55.
-\]
+$$
 
 With 96 kernels, the observed output is therefore **`(55, 55, 96)`**, matching the notebook's printed result.
 
@@ -163,35 +163,35 @@ for f in range(self.filters):
 
 After a convolution, the project applies the rectified linear unit:
 
-\[
+$$
 \operatorname{ReLU}(z)=\max(0,z).
-\]
+$$
 
-For a sample vector such as \([1,-1,-0.5,0.32]\), the output is \([1,0,0,0.32]\).
+For a sample vector such as $[1,-1,-0.5,0.32]$, the output is $[1,0,0,0.32]$.
 
 **Intuition.** A stack of linear functions without nonlinear activations can be collapsed into one linear function. Adding a nonlinear step lets each successive layer construct more expressive feature representations.
 
 The derivative, almost everywhere, is:
 
-\[
+$$
 \operatorname{ReLU}'(z)=
 \begin{cases}
 1 & z>0,\\
 0 & z<0.
 \end{cases}
-\]
+$$
 
-At \(z=0\), one adopts a subgradient convention; frameworks handle this automatically. The derivative helps explain why some signals pass backward through activated units, while others are blocked.
+At $z=0$, one adopts a subgradient convention; frameworks handle this automatically. The derivative helps explain why some signals pass backward through activated units, while others are blocked.
 
 **Source distinction:** in the main custom assembly, this activation is called through **TensorFlow's `tf.nn.relu`**, not through a manually written NumPy ReLU function. The notebook contains a separate simple ReLU demonstration.
 
 ### 3.4 Max pooling — compressing the spatial representation
 
-Given a local window \(\Omega(i,j)\), max pooling returns the strongest response:
+Given a local window $\Omega(i,j)$, max pooling returns the strongest response:
 
-\[
+$$
 Y[i,j,c]=\max_{(u,v)\in\Omega(i,j)} X[u,v,c].
-\]
+$$
 
 Unlike convolution, the max-pooling layer has **no learned filter weights**. It changes how activations are aggregated, usually shrinking the spatial dimensions.
 
@@ -211,17 +211,17 @@ The conceptual backward derivative of a max operation routes gradient to the max
 
 Once the final feature maps are flattened, dense layers transform vectors through weighted sums:
 
-\[
+$$
 Z=XW+b.
-\]
+$$
 
 For a minibatch:
 
-\[
+$$
 X\in\mathbb{R}^{B\times d_{in}},\qquad
 W\in\mathbb{R}^{d_{in}\times d_{out}},\qquad
 Z\in\mathbb{R}^{B\times d_{out}}.
-\]
+$$
 
 The custom `Dense` class provides:
 
@@ -233,19 +233,19 @@ self.biases = np.zeros((1, out_features))
 return np.dot(input_data, self.weights) + self.biases
 ```
 
-Its weights use a **He-style scaling factor**, \(\sqrt{2/d_{in}}\), relevant to networks with ReLU activations. The output is an affine transformation; nonlinearity is applied separately in the assembled model.
+Its weights use a **He-style scaling factor**, $\sqrt{2/d_{in}}$, relevant to networks with ReLU activations. The output is an affine transformation; nonlinearity is applied separately in the assembled model.
 
 For the 227-pixel custom assembly, the flattened representation is **9,216 features**, giving the first dense layer a 9,216-to-4,096 mapping. In the TensorFlow training architecture, the different input shape leads to a **6,400-feature** flattening step instead.
 
 ### 3.6 Local response normalization — competition between nearby channels
 
-The project implements a custom `custom_LocalResponseNormalization` layer. For a location \((h,w)\) and channel \(c\), the intended operation is approximately:
+The project implements a custom `custom_LocalResponseNormalization` layer. For a location $(h,w)$ and channel $c$, the intended operation is approximately:
 
-\[
+$$
 Y_{h,w,c}=\frac{X_{h,w,c}}{\left(k+\alpha\sum_{j\in N(c)}X_{h,w,j}^{2}\right)^{\beta}}.
-\]
+$$
 
-Here, \(N(c)\) is a channel neighborhood, \(k\) is a positive bias, and \(\alpha\) and \(\beta\) control the normalization strength.
+Here, $N(c)$ is a channel neighborhood, $k$ is a positive bias, and $\alpha$ and $\beta$ control the normalization strength.
 
 **Intuition.** An activation is compared with surrounding channel activity: a value that is large relative to its neighbors may remain prominent, while magnitudes are rescaled by nearby energy.
 
@@ -261,23 +261,23 @@ The separate [`BatchNormalization.ipynb`](Inbuilt_Modules_Vs_Custom2/BatchNormal
 
 For feature-wise minibatch statistics:
 
-\[
+$$
 \mu_B=\frac{1}{m}\sum_{i=1}^{m}x_i,
 \qquad
 \sigma_B^2=\frac{1}{m}\sum_{i=1}^{m}(x_i-\mu_B)^2,
-\]
+$$
 
-\[
+$$
 \hat{x}_i=\frac{x_i-\mu_B}{\sqrt{\sigma_B^2+\epsilon}},
 \qquad
 y_i=\gamma\hat{x}_i+\beta.
-\]
+$$
 
-The custom class initializes \(\gamma=1\), \(\beta=0\), and maintains exponentially updated running mean and variance for inference:
+The custom class initializes $\gamma=1$, $\beta=0$, and maintains exponentially updated running mean and variance for inference:
 
-\[
+$$
 \mu_{run}\leftarrow q\mu_{run}+(1-q)\mu_B
-\]
+$$
 
 with `momentum=0.9` by default. It exposes `update_params(gamma, beta)` but does not implement gradient calculation or optimizer-driven updates for those parameters.
 
@@ -364,29 +364,29 @@ A standard dense or convolution operation learns coefficients. The number of par
 
 **Convolution:**
 
-\[
+$$
 N_{conv}=(K_h\cdot K_w\cdot C_{in}+1)\cdot C_{out}
-\]
+$$
 
 The `+1` accounts for one bias per output filter. For the first convolution:
 
-\[
+$$
 (11\cdot11\cdot3+1)\cdot96
 =\boxed{34,944}.
-\]
+$$
 
 **Dense:**
 
-\[
+$$
 N_{dense}=(d_{in}+1)\cdot d_{out}.
-\]
+$$
 
 For the first dense layer in the **trained** branch:
 
-\[
+$$
 (6400+1)\cdot4096
 =\boxed{26,218,496}.
-\]
+$$
 
 That single transformation accounts for **more than half** of the model's 46.8 million parameters. This explains why large fully connected layers can contribute heavily to model capacity and overfitting risk.
 
@@ -436,43 +436,43 @@ This section explains concepts needed to understand a trained CNN. **The custom 
 
 A simplified classifier can be written as:
 
-\[
+$$
 z^{(1)}=W^{(1)}*x+b^{(1)},
-\]
+$$
 
-\[
+$$
 a^{(1)}=\mathrm{ReLU}(z^{(1)}),
-\]
+$$
 
-\[
+$$
 \ldots\quad s=W^{(L)}a^{(L-1)}+b^{(L)},
-\]
+$$
 
-\[
+$$
 p_k=\frac{e^{s_k}}{\sum_j e^{s_j}}.
-\]
+$$
 
-The final quantity \(p_k\) is the softmax probability assigned to class \(k\), based on the network's learned scores \(s\).
+The final quantity $p_k$ is the softmax probability assigned to class $k$, based on the network's learned scores $s$.
 
 ### 6.2 Cross-entropy — turning incorrect predictions into a scalar objective
 
-Given one-hot ground-truth label \(y\) and predicted probabilities \(p\), categorical cross-entropy is:
+Given one-hot ground-truth label $y$ and predicted probabilities $p$, categorical cross-entropy is:
 
-\[
+$$
 \mathcal{L}(y,p)=-\sum_{k=1}^{K}y_k\log p_k.
-\]
+$$
 
-For the correct class \(t\), this becomes \(\mathcal{L}=-\log p_t\). A high confidence in the correct class yields a small loss; a low confidence yields a larger loss.
+For the correct class $t$, this becomes $\mathcal{L}=-\log p_t$. A high confidence in the correct class yields a small loss; a low confidence yields a larger loss.
 
 This is the loss configured in the project's `model.compile(..., loss="categorical_crossentropy")` call.
 
 ### 6.3 The softmax plus cross-entropy simplification
 
-For a single example, differentiation with respect to pre-softmax logits \(s\) leads to the elegant result:
+For a single example, differentiation with respect to pre-softmax logits $s$ leads to the elegant result:
 
-\[
+$$
 \frac{\partial\mathcal{L}}{\partial s_k}=p_k-y_k.
-\]
+$$
 
 This tells us the direction in which class scores should move. The predicted probability and true one-hot label together produce a teaching signal for earlier layers.
 
@@ -480,23 +480,23 @@ This tells us the direction in which class scores should move. The predicted pro
 
 Every parameter contributes to the output through a chain of intermediate operations. The chain rule makes that relationship differentiable:
 
-\[
+$$
 \frac{\partial\mathcal{L}}{\partial W}
 =\frac{\partial\mathcal{L}}{\partial z}
 \frac{\partial z}{\partial W}
-\]
+$$
 
 where the general multi-dimensional case uses the appropriate Jacobian products and sums over contributing paths.
 
-For a simple dense layer \(z=xW+b\), with incoming gradient \(\delta=\partial\mathcal{L}/\partial z\):
+For a simple dense layer $z=xW+b$, with incoming gradient $\delta=\partial\mathcal{L}/\partial z$:
 
-\[
+$$
 \frac{\partial\mathcal{L}}{\partial W}=x^T\delta,
 \qquad
 \frac{\partial\mathcal{L}}{\partial b}=\sum_{batch}\delta,
 \qquad
 \frac{\partial\mathcal{L}}{\partial x}=\delta W^T.
-\]
+$$
 
 For a convolution, the same basic principle aggregates gradient contributions at every spatial position where a **shared kernel weight** was used. This is the mathematical reason a single filter can be improved from evidence across an entire image.
 
@@ -504,11 +504,11 @@ For a convolution, the same basic principle aggregates gradient contributions at
 
 At each optimization step, stochastic gradient descent applies a rule of the form:
 
-\[
+$$
 W_{t+1}=W_t-\eta\nabla_W\mathcal{L}(W_t),
-\]
+$$
 
-with learning rate \(\eta\). The implementation also passes `weight_decay=0.0005` to its SGD optimizer, so the actual update involves the optimizer's weight-decay behavior as implemented by the installed TensorFlow/Keras version.
+with learning rate $\eta$. The implementation also passes `weight_decay=0.0005` to its SGD optimizer, so the actual update involves the optimizer's weight-decay behavior as implemented by the installed TensorFlow/Keras version.
 
 This also explains the conceptual difference between the two approaches:
 
@@ -576,13 +576,13 @@ The saved console output reports **462 training images and 51 validation images*
 
 For a dataset of pixel values, the notebook computes global scalar mean and standard deviation using accumulated sums and squared sums:
 
-\[
+$$
 \mu=\frac{1}{N}\sum_{i=1}^{N}x_i,
-\]
+$$
 
-\[
+$$
 \sigma=\sqrt{\frac{1}{N}\sum_{i=1}^{N}x_i^2-\mu^2}.
-\]
+$$
 
 In an earlier exploratory cell, `normalize_image` returns `(image - mean) / std_dev`. Later, however, the **active function is redefined** as:
 
@@ -702,9 +702,9 @@ The graph intentionally limits the loss-axis scale to keep later epochs visible;
 
 The final absolute difference is:
 
-\[
+$$
 81.82\%-23.53\%=\boxed{58.29\text{ percentage points}}.
-\]
+$$
 
 That is a large discrepancy between fitted and held-out performance, consistent with a model that has learned properties of its training subset much better than properties that generalize to validation images.
 
@@ -717,7 +717,7 @@ That is a large discrepancy between fitted and held-out performance, consistent 
 - Hyperparameters and regularization choices in a small-data regime.
 - A training setup designed to study the architecture rather than optimize benchmark performance.
 
-Even a simple 16-class uniform random guess would have a reference accuracy of \(1/16=6.25\%\), but using that baseline alone would not justify calling the trained model robust. **No independent test accuracy is available** from the existing notebook.
+Even a simple 16-class uniform random guess would have a reference accuracy of $1/16=6.25\%$, but using that baseline alone would not justify calling the trained model robust. **No independent test accuracy is available** from the existing notebook.
 
 ### 9.4 What the experiment establishes
 
