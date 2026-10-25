@@ -164,7 +164,7 @@ for f in range(self.filters):
 After a convolution, the project applies the rectified linear unit:
 
 $$
-\operatorname{ReLU}(z)=\max(0,z).
+\mathrm{ReLU}(z)=\max(0,z).
 $$
 
 For a sample vector such as $[1,-1,-0.5,0.32]$, the output is $[1,0,0,0.32]$.
@@ -174,7 +174,7 @@ For a sample vector such as $[1,-1,-0.5,0.32]$, the output is $[1,0,0,0.32]$.
 The derivative, almost everywhere, is:
 
 $$
-\operatorname{ReLU}'(z)=
+\mathrm{ReLU}'(z)=
 \begin{cases}
 1 & z>0,\\
 0 & z<0.
